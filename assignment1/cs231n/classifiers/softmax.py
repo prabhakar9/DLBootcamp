@@ -40,9 +40,9 @@ def softmax_loss_naive(W, X, y, reg):
         dW[:,y[i]] += -X[i]
         
         for j in xrange(num_classes):
-            softmax_dW = np.exp(scores_shift[j])/np.sum(np.exp(scores_shift))
+            probs = np.exp(scores_shift[j])/np.sum(np.exp(scores_shift))
             #dW[:,j] += (softmax_dW - (j == y[i]))*X[i,:]
-            dW[:,j] += softmax_dW*X[i]
+            dW[:,j] += probs*X[i]
   
   loss /= num_train
   loss += 0.5 * reg * np.sum(W*W)
@@ -79,17 +79,17 @@ def softmax_loss_vectorized(W, X, y, reg):
   scores_shift = scores - np.max(scores, axis=1, keepdims=True)
   #print scores_shift.shape
   f_exp = np.exp(scores_shift)
-  softmax_loss = f_exp/np.sum(f_exp, axis=1, keepdims=True)
-  loss = -np.sum(np.log(softmax_loss[range(num_train),y]))
+  probs = f_exp/np.sum(f_exp, axis=1, keepdims=True)
+  loss = -np.sum(np.log(probs[range(num_train),y]))
   loss /= num_train
   loss += 0.5*reg*np.sum(W*W)
     
-  softmax_dW = np.zeros(softmax_loss.shape)
-  softmax_dW[np.arange(num_train), y] = 1
+  correct_indices = np.zeros(probs.shape)
+  correct_indices[np.arange(num_train), y] = 1
     
   #print X.shape, W.shape
   
-  dW = (X.T).dot(softmax_loss - softmax_dW)
+  dW = (X.T).dot(probs - correct_indices)
   #print dW.shape
   dW /= num_train
   dW += reg*W
