@@ -194,10 +194,10 @@ class NERModel(LanguageModel):
         W = tf.get_variable("W", shape=[input_dims, self.config.hidden_size], initializer=xavier_weight_init())
         b1 = tf.get_variable("b1", shape=[self.config.hidden_size, ], initializer=xavier_weight_init())
         
-        reg = tf.nn.l2_loss(W)
+        reg = tf.nn.l2_loss(W)*self.config.lr
         tf.add_to_collection("total_loss", reg)
         
-        layer_x = tf.nn.sigmoid(tf.matmul(window, W) + b1)
+        layer_x = tf.nn.relu(tf.matmul(window, W) + b1)
     
     layer_x_dp = tf.nn.dropout(layer_x, self.dropout_placeholder)
     
@@ -205,10 +205,10 @@ class NERModel(LanguageModel):
         U = tf.get_variable("U", shape=[self.config.hidden_size, self.config.label_size], initializer=xavier_weight_init())
         b2 = tf.get_variable("b2", shape=[self.config.label_size, ], initializer=xavier_weight_init())
         
-        reg = tf.nn.l2_loss(U)
+        reg = tf.nn.l2_loss(U)*self.config.lr
         tf.add_to_collection("total_loss", reg)
         
-        output = tf.nn.softmax(tf.matmul(layer_x_dp, U) + b2)
+        output = tf.matmul(layer_x_dp, U) + b2
     #output = tf.nn.dropout(out_x, self.dropout_placeholder)
     # raise NotImplementedError
     ### END YOUR CODE
@@ -225,9 +225,9 @@ class NERModel(LanguageModel):
       loss: A 0-d tensor (scalar)
     """
     ### YOUR CODE HERE
-    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y, self.labels_placeholder))
-    loss += self.config.l2*sum(tf.get_collection("total_loss"))
-    #loss = tf.add_n(tf.get_collection("total_loss"))
+    softmax_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y, self.labels_placeholder))
+    tf.add_to_collection("total_loss", softmax_loss)
+    loss = tf.add_n(tf.get_collection("total_loss"))
     #raise NotImplementedError
     ### END YOUR CODE
     return loss
@@ -405,6 +405,7 @@ def test_NER():
       print 'Writing predictions to q2_test.predicted'
       _, predictions = model.predict(session, model.X_test, model.y_test)
       save_predictions(predictions, "q2_test.predicted")
+      #print np.mean(predictions)
 
 if __name__ == "__main__":
   test_NER()
